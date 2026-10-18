@@ -21,8 +21,8 @@ List<StrokePoint> getStrokePoints(
   final pts =
       points.map((p) => p.copyWith(pressure: p.pressure ?? 0.5)).toList();
 
-  // If we have two equal points, treat them as a single point.
-  if (pts.length == 2 && pts.first == pts.last) {
+  // If we have two points at the same position, treat them as a single point.
+  if (pts.length == 2 && pts.first.isAtSamePositionAs(pts.last)) {
     pts.removeLast();
   }
 
@@ -91,8 +91,9 @@ List<StrokePoint> getStrokePoints(
         // and the current point.
         : prev.point.lerp(t, pts[i]);
 
-    // If the new point is the same as the previous point, skip ahead.
-    if (point == prev.point) continue;
+    // If the new point is at the same position as the previous point,
+    // skip ahead (even if its pressure differs).
+    if (point.isAtSamePositionAs(prev.point)) continue;
 
     // How far is the new point from the previous point?
     final distance = point.distanceTo(prev.point);
