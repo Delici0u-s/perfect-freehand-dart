@@ -21,9 +21,15 @@ List<StrokePoint> getStrokePoints(
   final pts =
       points.map((p) => p.copyWith(pressure: p.pressure ?? 0.5)).toList();
 
-  // If we have two points at the same position, treat them as a single point.
-  if (pts.length == 2 && pts.first.isAtSamePositionAs(pts.last)) {
-    pts.removeLast();
+  // If all points are at the same position (e.g. a tap), treat them as a
+  // single point with the highest pressure applied, so the dot's size
+  // reflects how hard it was pressed.
+  if (pts.length > 1 && pts.every((p) => p.isAtSamePositionAs(pts.first))) {
+    final maxPressure =
+        pts.map((p) => p.pressure!).reduce((a, b) => a > b ? a : b);
+    pts
+      ..removeRange(1, pts.length)
+      ..[0] = pts.first.copyWith(pressure: maxPressure);
   }
 
   // Add extra points between the two, to help avoid "dash" lines

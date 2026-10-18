@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -60,14 +61,31 @@ void main() {
       }
     }
 
-    test('are reduced to a single stroke point', () {
-      final options = StrokeOptions(isComplete: true);
-      for (final pressures in [...pressureSets.values, manyPressures]) {
-        if (pressures.length < 3) continue; // two points get a 1pt offset
+    test('are reduced to a single point with the highest pressure', () {
+      final options = StrokeOptions(isComplete: true, simulatePressure: false);
+      for (final pressures in pressureSets.values) {
         final strokePoints =
             getStrokePoints(stationaryPoints(pressures), options: options);
-        expect(strokePoints, hasLength(1));
+        final maxPressure = pressures.map((p) => p ?? 0.5).reduce(max);
+        expect(strokePoints.first.point.pressure, maxPressure);
       }
+    });
+
+    test('the dot size follows the highest pressure, in any order', () {
+      final options = StrokeOptions(isComplete: true, simulatePressure: false);
+      Size dotSize(List<double> pressures) => (Path()
+            ..addPolygon(
+              getStroke(stationaryPoints(pressures), options: options),
+              true,
+            ))
+          .getBounds()
+          .size;
+
+      final pressedHard = dotSize([0.9]);
+      expect(dotSize([0.1, 0.9]), pressedHard);
+      expect(dotSize([0.9, 0.1]), pressedHard);
+      expect(dotSize([0.2, 0.9, 0.4, 0.1]), pressedHard);
+      expect(dotSize([0.1]).width, lessThan(pressedHard.width));
     });
   });
 
