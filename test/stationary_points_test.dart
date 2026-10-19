@@ -63,11 +63,14 @@ void main() {
 
     test('are reduced to a single point with the highest pressure', () {
       final options = StrokeOptions(isComplete: true, simulatePressure: false);
-      for (final pressures in pressureSets.values) {
-        final strokePoints =
-            getStrokePoints(stationaryPoints(pressures), options: options);
+      for (final pressures in [...pressureSets.values, manyPressures]) {
+        List<PointVector> strokePoints(List<double?> pressures) =>
+            getStrokePoints(stationaryPoints(pressures), options: options)
+                .map((p) => p.point)
+                .toList();
         final maxPressure = pressures.map((p) => p ?? 0.5).reduce(max);
-        expect(strokePoints.first.point.pressure, maxPressure);
+        expect(strokePoints(pressures), strokePoints([maxPressure]),
+            reason: '${pressures.length} points');
       }
     });
 
