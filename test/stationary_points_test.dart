@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -60,13 +61,61 @@ void main() {
       }
     }
 
-    test('are reduced to a single stroke point', () {
-      final options = StrokeOptions(isComplete: true);
+    test('are reduced to a single point with the highest pressure', () {
+      final options = StrokeOptions(isComplete: true, simulatePressure: false);
       for (final pressures in [...pressureSets.values, manyPressures]) {
-        if (pressures.length < 3) continue; // two points get a 1pt offset
-        final strokePoints =
-            getStrokePoints(stationaryPoints(pressures), options: options);
-        expect(strokePoints, hasLength(1));
+        List<PointVector> strokePoints(List<double?> pressures) =>
+            getStrokePoints(stationaryPoints(pressures), options: options)
+                .map((p) => p.point)
+                .toList();
+        final maxPressure = pressures.map((p) => p ?? 0.5).reduce(max);
+        expect(strokePoints(pressures), strokePoints([maxPressure]),
+            reason: '${pressures.length} points');
+      }
+    });
+
+    test('the dot size follows the highest pressure, in any order', () {
+      final options = StrokeOptions(isComplete: true, simulatePressure: false);
+      Size dotSize(List<double> pressures) => (Path()
+            ..addPolygon(
+              getStroke(stationaryPoints(pressures), options: options),
+              true,
+            ))
+          .getBounds()
+          .size;
+
+      final pressedHard = dotSize([0.9]);
+      expect(dotSize([0.1, 0.9]), pressedHard);
+      expect(dotSize([0.9, 0.1]), pressedHard);
+      expect(dotSize([0.2, 0.9, 0.4, 0.1]), pressedHard);
+      expect(dotSize([0.1]).width, lessThan(pressedHard.width));
+    });
+
+    test('a tap that wobbles slightly still uses the highest pressure', () {
+      // A real tap often drifts by a fraction of a pixel between points.
+      List<PointVector> wobblingPoints(List<double> pressures) => [
+            for (final (i, pressure) in pressures.indexed)
+              PointVector(100 + i * 0.05, 100 - i * 0.03, pressure),
+          ];
+
+      for (final isComplete in [false, true]) {
+        final options =
+            StrokeOptions(isComplete: isComplete, simulatePressure: false);
+        double dotWidth(List<PointVector> points) =>
+            (Path()..addPolygon(getStroke(points, options: options), true))
+                .getBounds()
+                .width;
+
+        final pressedHard = dotWidth(stationaryPoints([0.9]));
+        for (final pressures in [
+          [0.9, 0.1],
+          [0.2, 0.9, 0.4, 0.1],
+          [0.1, 0.5, 0.9],
+        ]) {
+          expect(dotWidth(wobblingPoints(pressures)),
+              closeTo(pressedHard, options.size * 0.1),
+              reason: '$pressures (isComplete: $isComplete)');
+        }
       }
     });
   });
