@@ -45,16 +45,9 @@ List<StrokePoint> getStrokePoints(
     }
   }
 
-  // If there's only one point, add another point at a 1pt offset.
-  // Don't mutate the input array!
-  if (pts.length == 1) {
-    final first = pts.first;
-    pts.add(PointVector(
-      first.x + 1,
-      first.y + 1,
-      first.pressure,
-    ));
-  }
+  // A single point is left alone: [getStrokeOutlinePoints] draws it as a
+  // round dot. (Adding a second point at a 1pt offset, as before, stretched
+  // the dot diagonally.)
 
   /// Updates the pressure of the point at index [i].
   /// This is used in [getStrokeOutlinePoints] if [rememberSimulatedPressure]
