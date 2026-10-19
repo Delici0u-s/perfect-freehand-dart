@@ -118,6 +118,30 @@ void main() {
         }
       }
     });
+
+    test('draw a round dot, not one stretched in any direction', () {
+      for (final size in [1.0, 3.0, 16.0, 100.0]) {
+        for (final count in [1, 2, 3, 100]) {
+          final options = StrokeOptions(size: size, isComplete: true);
+          final outline = getStroke(
+            stationaryPoints(List.filled(count, 0.5)),
+            options: options,
+          );
+
+          // The outline's extent along a direction at [angle].
+          double extent(double angle) {
+            final projected =
+                outline.map((p) => p.dx * cos(angle) + p.dy * sin(angle));
+            return projected.reduce(max) - projected.reduce(min);
+          }
+
+          final extents = [for (var i = 0; i < 4; i++) extent(i * pi / 4)];
+          expect(
+              extents.reduce(max) - extents.reduce(min), lessThan(size * 0.05),
+              reason: '$count points, size $size: $extents');
+        }
+      }
+    });
   });
 
   group('PointVector.isAtSamePositionAs', () {
