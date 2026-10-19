@@ -87,6 +87,34 @@ void main() {
       expect(dotSize([0.2, 0.9, 0.4, 0.1]), pressedHard);
       expect(dotSize([0.1]).width, lessThan(pressedHard.width));
     });
+
+    test('a tap that wobbles slightly still uses the highest pressure', () {
+      // A real tap often drifts by a fraction of a pixel between points.
+      List<PointVector> wobblingPoints(List<double> pressures) => [
+            for (final (i, pressure) in pressures.indexed)
+              PointVector(100 + i * 0.05, 100 - i * 0.03, pressure),
+          ];
+
+      for (final isComplete in [false, true]) {
+        final options =
+            StrokeOptions(isComplete: isComplete, simulatePressure: false);
+        double dotWidth(List<PointVector> points) =>
+            (Path()..addPolygon(getStroke(points, options: options), true))
+                .getBounds()
+                .width;
+
+        final pressedHard = dotWidth(stationaryPoints([0.9]));
+        for (final pressures in [
+          [0.9, 0.1],
+          [0.2, 0.9, 0.4, 0.1],
+          [0.1, 0.5, 0.9],
+        ]) {
+          expect(dotWidth(wobblingPoints(pressures)),
+              closeTo(pressedHard, options.size * 0.1),
+              reason: '$pressures (isComplete: $isComplete)');
+        }
+      }
+    });
   });
 
   group('PointVector.isAtSamePositionAs', () {

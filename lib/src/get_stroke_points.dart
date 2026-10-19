@@ -21,10 +21,12 @@ List<StrokePoint> getStrokePoints(
   final pts =
       points.map((p) => p.copyWith(pressure: p.pressure ?? 0.5)).toList();
 
-  // If all points are at the same position (e.g. a tap), treat them as a
-  // single point with the highest pressure applied, so the dot's size
-  // reflects how hard it was pressed.
-  if (pts.length > 1 && pts.every((p) => p.isAtSamePositionAs(pts.first))) {
+  // If all points stay within the stroke's size of the first one (e.g. a tap,
+  // which often drifts by a fraction of a pixel), treat them as a single
+  // point with the highest pressure applied, so the dot's size reflects how
+  // hard it was pressed.
+  if (pts.length > 1 &&
+      pts.every((p) => p.distanceTo(pts.first) <= options.size)) {
     final maxPressure =
         pts.map((p) => p.pressure!).reduce((a, b) => a > b ? a : b);
     pts
